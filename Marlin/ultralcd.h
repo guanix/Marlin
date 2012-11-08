@@ -3,6 +3,7 @@
 
 #include "Marlin.h"
 
+#ifndef LCD_4D
 #ifdef ULTRA_LCD
 
   void lcd_update();
@@ -78,6 +79,18 @@ char *ftostr31(const float &x);
 char *ftostr32(const float &x);
 char *ftostr5(const float &x);
 char *ftostr51(const float &x);
-char *ftostr52(const float &x);
+
+#else
+
+#include "lcd4d.h"
+#define LCD_INIT lcd4d_init();
+#define LCD_STATUS lcd4d_status();
+#define LCD_MESSAGE(x) lcd4d_status(x);
+#define LCD_MESSAGEPGM(x) lcd4d_statuspgm(x);
+FORCE_INLINE void lcd_status() {};
+
+#define CLICKED false
+#define BLOCK ;
+#endif //LCD4D
 
 #endif //ULTRALCD

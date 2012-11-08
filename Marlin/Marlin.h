@@ -45,17 +45,48 @@
 
 #include "WString.h"
 
-#ifdef AT90USB
+#ifdef REPRAPPRO_MULTIMATERIALS
+  #define MYSERIAL MSerial
+  #define MYSERIAL1 MSerial1
+#else
+
+#if MOTHERBOARD == 8 // Teensylu
   #define MYSERIAL Serial
+  #define MYSERIAL1 Serial1
 #else
   #define MYSERIAL MSerial
 #endif
+
+#ifdef LCD_4D
+  #define MYSERIAL1 MSerial1
+#endif
+
+#endif
+
+//this is a unfinsihed attemp to removes a lot of warning messages, see:
+// http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=57011
+//typedef char prog_char PROGMEM; 
+// //#define PSTR    (s )        ((const PROGMEM char *)(s))
+// //# define MYPGM(s) (__extension__({static prog_char __c[] = (s); &__c[0];})) 
+// //#define MYPGM(s) ((const prog_char *g PROGMEM=s))
+#define MYPGM(s) PSTR(s)
+//#define MYPGM(s)  (__extension__({static char __c[] __attribute__((__progmem__)) = (s); &__c[0];}))  //This is the normal behaviour
+//#define MYPGM(s)  (__extension__({static prog_char __c[]  = (s); &__c[0];})) //this does not work but hides the warnings
+
 
 #define SERIAL_PROTOCOL(x) MYSERIAL.print(x);
 #define SERIAL_PROTOCOL_F(x,y) MYSERIAL.print(x,y);
 #define SERIAL_PROTOCOLPGM(x) serialprintPGM(PSTR(x));
 #define SERIAL_PROTOCOLLN(x) {MYSERIAL.print(x);MYSERIAL.write('\n');}
 #define SERIAL_PROTOCOLLNPGM(x) {serialprintPGM(PSTR(x));MYSERIAL.write('\n');}
+
+#ifdef MYSERIAL1
+#define SERIAL1_PROTOCOL(x) MYSERIAL1.print(x);
+#define SERIAL1_PROTOCOL_F(x,y) MYSERIAL1.print(x,y);
+#define SERIAL1_PROTOCOLPGM(x) serial1printPGM(MYPGM(x));
+#define SERIAL1_PROTOCOLLN(x) {MYSERIAL1.print(x);MYSERIAL1.write('\n');}
+#define SERIAL1_PROTOCOLLNPGM(x) {serial1printPGM(MYPGM(x));MYSERIAL1.write('\n');}
+#endif
 
 
 const char errormagic[] PROGMEM ="Error:";
@@ -90,6 +121,26 @@ FORCE_INLINE void serialprintPGM(const char *str)
   }
 }
 
+#ifdef MYSERIAL1
+#define Serial1printPGM(x) serial1printPGM(MYPGM(x))
+FORCE_INLINE void serial1printPGM(const char *str)
+{
+  char ch=pgm_read_byte(str);
+  while(ch)
+  {
+    MYSERIAL1.write(ch);
+    ch=pgm_read_byte(++str);
+  }
+}
+#endif
+
+// printing floats to 3DP
+FORCE_INLINE void serialPrintFloat( float f){
+  SERIAL_ECHO((int)f);
+  SERIAL_ECHOPGM(".");
+  int mantissa = (f - (int)f) * 1000;
+  SERIAL_ECHO( abs(mantissa) );
+}
 
 void get_command();
 void process_commands();

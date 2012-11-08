@@ -1,5 +1,5 @@
 /*
-  HardwareSerial.h - Hardware serial library for Wiring
+  MarlinSerial.h - Hardware serial library for Wiring
   Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
 
   This library is free software; you can redistribute it and/or
@@ -37,7 +37,6 @@ class MarlinSerial : public Stream
     volatile uint8_t *_ucsra;
     volatile uint8_t *_ucsrb;
     volatile uint8_t *_udr;
-    uint8_t _rxc;
     uint8_t _rxen;
     uint8_t _txen;
     uint8_t _rxcie;
@@ -48,7 +47,7 @@ class MarlinSerial : public Stream
       volatile uint8_t *ubrrh, volatile uint8_t *ubrrl,
       volatile uint8_t *ucsra, volatile uint8_t *ucsrb,
       volatile uint8_t *udr,
-      uint8_t rxc, uint8_t rxen, uint8_t txen, uint8_t rxcie, uint8_t udre, uint8_t u2x);
+      uint8_t rxen, uint8_t txen, uint8_t rxcie, uint8_t udre, uint8_t u2x);
     void begin(long);
     void end();
     virtual int available(void);
@@ -56,9 +55,8 @@ class MarlinSerial : public Stream
     virtual int read(void);
     virtual void flush(void);
     virtual void write(uint8_t);
+    void checkRx(void);
     using Print::write; // pull in write(str) and write(buf, size) from Print
-    
-    virtual void checkRx(void);
 };
 
 #if defined(UBRRH) || defined(UBRR0H)
@@ -70,7 +68,7 @@ class MarlinSerial : public Stream
   extern MarlinSerial MSerial1;
 #endif
 #if defined(UBRR2H)
-  extern MarlinSerial MSerial2;
+extern MarlinSerial MSerial2;
 #endif
 #if defined(UBRR3H)
   extern MarlinSerial MSerial3;

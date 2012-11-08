@@ -1,5 +1,5 @@
 /*
-  HardwareSerial.cpp - Hardware serial library for Wiring
+  MarlinSerial.cpp - Hardware serial library for Wiring
   Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
 
   This library is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@
 #include "wiring.h"
 #include "wiring_private.h"
 
-// this next line disables the entire HardwareSerial.cpp, 
+// this next line disables the entire MarlinSerial.cpp, 
 // this is so I can support Attiny series and any other chip without a uart
 #if defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H)
 
@@ -37,6 +37,8 @@
 // using a ring buffer (I think), in which rx_buffer_head is the index of the
 // location to which to write the next incoming character and rx_buffer_tail
 // is the index of the location from which to read.
+
+
 #if (RAMEND < 1000)
   #define RX_BUFFER_SIZE 32
 #else
@@ -173,8 +175,8 @@ inline void store_char(unsigned char c, ring_buffer *rx_buffer)
 MarlinSerial::MarlinSerial(ring_buffer *rx_buffer,
   volatile uint8_t *ubrrh, volatile uint8_t *ubrrl,
   volatile uint8_t *ucsra, volatile uint8_t *ucsrb,
-  volatile uint8_t *udr, 
-  uint8_t rxc, uint8_t rxen, uint8_t txen, uint8_t rxcie, uint8_t udre, uint8_t u2x)
+  volatile uint8_t *udr,
+  uint8_t rxen, uint8_t txen, uint8_t rxcie, uint8_t udre, uint8_t u2x)
 {
   _rx_buffer = rx_buffer;
   _ubrrh = ubrrh;
@@ -186,7 +188,6 @@ MarlinSerial::MarlinSerial(ring_buffer *rx_buffer,
   _txen = txen;
   _rxcie = rxcie;
   _udre = udre;
-  _rxc = rxc;
   _u2x = u2x;
 }
 
@@ -270,24 +271,6 @@ void MarlinSerial::flush()
   _rx_buffer->head = _rx_buffer->tail;
 }
 
-void MarlinSerial::checkRx()
-{
-  if((*_ucsra & (1<<_rxc)) != 0) {
-    unsigned char c  =  *_udr;
-    int i = (unsigned int)(rx_buffer.head + 1) % RX_BUFFER_SIZE;
-
-    // if we should be storing the received character into the location
-    // just before the tail (meaning that the head would advance to the
-    // current location of the tail), we're about to overflow the buffer
-    // and so we don't write the character or advance the head.
-    if (i != rx_buffer.tail) {
-      rx_buffer.buffer[rx_buffer.head] = c;
-      rx_buffer.head = i;
-    }
-  }
-}
-
-
 void MarlinSerial::write(uint8_t c)
 {
   while (!((*_ucsra) & (1 << _udre)))
@@ -296,12 +279,30 @@ void MarlinSerial::write(uint8_t c)
   *_udr = c;
 }
 
+    
+    void MarlinSerial::checkRx(void)
+    {
+        if((UCSR0A & (1<<RXC0)) != 0) {
+            unsigned char c  =  UDR0;
+            int i = (unsigned int)(rx_buffer.head + 1) % RX_BUFFER_SIZE;
+            
+            // if we should be storing the received character into the location
+            // just before the tail (meaning that the head would advance to the
+            // current location of the tail), we're about to overflow the buffer
+            // and so we don't write the character or advance the head.
+            if (i != rx_buffer.tail) {
+                rx_buffer.buffer[rx_buffer.head] = c;
+                rx_buffer.head = i;
+            }
+        }
+    }
+
 // Preinstantiate Objects //////////////////////////////////////////////////////
 
 #if defined(UBRRH) && defined(UBRRL)
-  MarlinSerial MSerial(&rx_buffer, &UBRRH, &UBRRL, &UCSRA, &UCSRB, &UDR, RXC, RXEN, TXEN, RXCIE, UDRE, U2X);
+  MarlinSerial MSerial(&rx_buffer, &UBRRH, &UBRRL, &UCSRA, &UCSRB, &UDR, RXEN, TXEN, RXCIE, UDRE, U2X);
 #elif defined(UBRR0H) && defined(UBRR0L)
-  MarlinSerial MSerial(&rx_buffer, &UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UDR0, RXC0, RXEN0, TXEN0, RXCIE0, UDRE0, U2X0);
+  MarlinSerial MSerial(&rx_buffer, &UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UDR0, RXEN0, TXEN0, RXCIE0, UDRE0, U2X0);
 #elif defined(USBCON)
   #warning no serial port defined  (port 0)
 #else
@@ -309,13 +310,13 @@ void MarlinSerial::write(uint8_t c)
 #endif
 
 #if defined(UBRR1H)
-  MarlinSerial MSerial1(&rx_buffer1, &UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UDR1, RXC1, RXEN1, TXEN1, RXCIE1, UDRE1, U2X1);
+  MarlinSerial MSerial1(&rx_buffer1, &UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UDR1, RXEN1, TXEN1, RXCIE1, UDRE1, U2X1);
 #endif
 #if defined(UBRR2H)
-  MarlinSerial MSerial2(&rx_buffer2, &UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UDR2, RXC2, RXEN2, TXEN2, RXCIE2, UDRE2, U2X2);
+  MarlinSerial MSerial2(&rx_buffer2, &UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UDR2, RXEN2, TXEN2, RXCIE2, UDRE2, U2X2);
 #endif
 #if defined(UBRR3H)
-  MarlinSerial MSerial3(&rx_buffer3, &UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UDR3, RXC3, RXEN3, TXEN3, RXCIE3, UDRE3, U2X3);
+  MarlinSerial MSerial3(&rx_buffer3, &UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UDR3, RXEN3, TXEN3, RXCIE3, UDRE3, U2X3);
 #endif
 
 #endif // whole file
