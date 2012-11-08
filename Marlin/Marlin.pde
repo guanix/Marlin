@@ -52,7 +52,7 @@
 #include "language.h"
 #include "pins_arduino.h"
 #include "slave_comms.h"
-
+ 
 #define VERSION_STRING  "1.0.1 RRP"
 
 // look here for descriptions of gcodes: http://linuxcnc.org/handbook/gcode/g-code.html
@@ -661,7 +661,7 @@ void wait_for_temp(uint8_t& t_ext, unsigned long& codenum)
           }
           manage_heater();
           manage_inactivity(1);
-          lcd_status();
+          LCD_STATUS
           led_status();
         #ifdef TEMP_RESIDENCY_TIME
             /* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time

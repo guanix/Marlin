@@ -6,6 +6,8 @@
 #include "language.h"
 #include "temperature.h"
 //#include "EEPROMwrite.h"
+
+
 //===========================================================================
 //=============================imported variables============================
 //===========================================================================
@@ -35,26 +37,16 @@ static char messagetext[LCD4D_WIDTH]="";
 //return for string conversion routines
 static char conv[8];
 
+#define BUFFLEN 15
+static char cmd_buff[BUFFLEN];
+static int  buff_index=0;
+
 static unsigned long previous_millis_lcd=0;
 
 #ifdef SDSUPPORT
 static uint8_t oldpercent=101;
 #endif
 
-/*
-
-void lcdProgMemprint(const char *str)
-{
-  char ch=pgm_read_byte(str);
-  while(ch)
-  {
-    lcd.print(ch);
-    ch=pgm_read_byte(++str);
-  }
-}
-#define lcdprintPGM(x) lcdProgMemprint(MYPGM(x))
-
-*/
 //===========================================================================
 //=============================functions         ============================
 //===========================================================================
@@ -62,10 +54,31 @@ void lcdProgMemprint(const char *str)
 int intround(const float &x){return int(0.5+x);}
 
 
+void incomming()
+{
+  if(MYSERIAL1.available())
+  {
+    cmd_buff[buff_index] = (char)MYSERIAL1.read();
+    if(cmd_buff[buff_index] == '\n')
+    {
+       cmd_buff[buff_index] = 0;
+       enquecommand(cmd_buff);
+       buff_index = 0;
+    } else
+       buff_index++;
+    if(buff_index >= BUFFLEN)
+    {
+      buff_index = BUFFLEN-1;
+    }
+  }  
+}
+
+
 void lcd4d_init()
 {
    MYSERIAL1.begin(115200);
-   LCD_MESSAGEPGM(WELCOME_MSG)
+   SERIAL1_PROTOCOLPGM(MESSAGE_ID)
+   SERIAL1_PROTOCOLLNPGM(WELCOME_MSG)
 
 }
 
@@ -98,34 +111,31 @@ void lcd4d_statuspgm(const char* message)
 void lcd4d_status()
 {
   
-    if(((millis() - previous_millis_lcd) < LCD4D_UPDATE_INTERVAL)   )
+    SERIAL1_CHECKDATA
+    if(((millis() - previous_millis_lcd) < LCD4D_UPDATE_INTERVAL) )
       return;
     
-  previous_millis_lcd=millis();
+     previous_millis_lcd=millis();
+     lcd4d_update();
   
-  //update Lcd
-
-  lcd4d_update();
 }
 
 void lcd4d_update() {
-  //LCDSERIAL_PROTOCOL(MESSAGE_ID)
-  //LCDSERIAL_PROTOCOLLN(messagetext)
   lcd4d_showStatus();
 }
 
 void lcd4d_showStatus()
 { 
-  static int olddegHotEnd0=-1;
-  static int oldtargetHotEnd0=-1;
+  static int olddegHotEnd0=0;
+  static int oldtargetHotEnd0=-272;
 
   //HotEnd0  
   int tHotEnd0=intround(degHotend0());
-  if(tHotEnd0!=olddegHotEnd0)
+  if(tHotEnd0!=olddegHotEnd0 )
   {
  
     SERIAL1_PROTOCOLPGM(HOTEND0_ID)
-    SERIAL1_PROTOCOLLN(ftostr3(tHotEnd0))
+    SERIAL1_PROTOCOLLN(tHotEnd0)
     olddegHotEnd0=tHotEnd0;
   }
   
@@ -133,25 +143,25 @@ void lcd4d_showStatus()
   if(ttHotEnd0!=oldtargetHotEnd0)
   {
     SERIAL1_PROTOCOLPGM(THOTEND0_ID)
-    SERIAL1_PROTOCOLLN(ftostr3(ttHotEnd0))
+    SERIAL1_PROTOCOLLN(ttHotEnd0)
     oldtargetHotEnd0=ttHotEnd0;
   }
   
   #if defined BED_USES_THERMISTOR || defined BED_USES_AD595 
     static int oldtBed=-1;
-    static int oldtargetBed=-1; 
+    static int oldtargetBed=-272; 
     int tBed=intround(degBed());
-    if(tBed!=oldtBed)
+    if(tBed!=oldtBed )
     {
       SERIAL1_PROTOCOLPGM(TBED_ID)
-      SERIAL1_PROTOCOLLN(ftostr3(tBed))
+      SERIAL1_PROTOCOLLN(tBed)
       oldtBed=tBed;
     }
     int targetBed=intround(degTargetBed());
     if(targetBed!=oldtargetBed)
     {
       SERIAL1_PROTOCOLPGM(TTBED_ID)
-      SERIAL1_PROTOCOLLN(ftostr3(targetBed))
+      SERIAL1_PROTOCOLLN(targetBed)
       oldtargetBed=targetBed;
     }
    #endif
@@ -164,14 +174,14 @@ void lcd4d_showStatus()
     if(tHotEnd1!=olddegHotEnd1)
     {
       SERIAL1_PROTOCOLPGM(THOTEND1_ID)
-      SERIAL1_PROTOCOLLN(ftostr3(ttHotEnd1)
+      SERIAL1_PROTOCOLLN(ttHotEnd1)
       olddegHotEnd1=tHotEnd1;
     }
     int ttHotEnd1=intround(degTargetHotend1());
     if(ttHotEnd1!=oldtargetHotEnd1)
     {
       SERIAL1_PROTOCOLPGM(THOTEND1_ID)
-      SERIAL1_PROTOCOLLN(ftostr3(ttHotEnd1))
+      SERIAL1_PROTOCOLLN(ttHotEnd1)
       oldtargetHotEnd1=ttHotEnd1;
     }
   #endif
@@ -189,7 +199,7 @@ void lcd4d_showStatus()
       SERIAL1_PROTOCOL(itostr2(time/60))
       SERIAL1_PROTOCOLPGM("h");
       SERIAL1_PROTOCOL(itostr2(time%60))
-      SERIAL1_PROTOCOLPGM("m");
+      SERIAL1_PROTOCOLLNPGM("m");
       oldtime=time;
     }
   }

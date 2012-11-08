@@ -5,7 +5,7 @@
 
 
 #define LCD4D_WIDTH 20
-#define LCD4D_UPDATE_INTERVAL 1000//100
+#define LCD4D_UPDATE_INTERVAL 100
 
 
 #define MESSAGE_ID "M:"
@@ -19,6 +19,8 @@
 #define ZPOS_ID "Z:"
 #define SDPERCENT_ID "SDP:"
 
+#define SERIAL1_CHECKDATA incomming();
+
 void lcd4d_init();
 void lcd4d_update();
 void lcd4d_status();
@@ -26,6 +28,7 @@ void lcd4d_status(const char* message);
 void lcd4d_status();
 void lcd4d_statuspgm(const char* message);
 void lcd4d_showStatus();
+void incomming();
 
 
 char *ftostr3(const float &x);

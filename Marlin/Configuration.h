@@ -304,6 +304,29 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define HOMING_FEEDRATE {100*60, 100*60, 100*60, 0}  // set the homing speeds (mm/min)
 
 // default settings 
+// X, Y, Z, E steps per mm
+
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   {91.4286, 91.4286, 4000, 875} // belt T2.5, pulley 14 teeth
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {71.1111, 71.1111, 4000, 875} // belt T2.5, pulley 18 teeth
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   {64, 64, 4000, 875}           // belt T2.5, pulley 20 teeth
+
+// Defaults changed by the G10 command
+
+
+#ifdef DOUBLEEXTRUDERS
+                           // E0    E1   
+#define X_EXTRUDER_OFFSET {0.00, 0.00}
+#define Y_EXTRUDER_OFFSET {0.00, 0.00}
+#define Z_EXTRUDER_OFFSET {0.00, 0.00}
+
+#elif defined(REPRAPPRO_MULTIMATERIALS)
+
+                           // E0    E1   E3
+#define X_EXTRUDER_OFFSET {0.00, 0.00 , 0.00}
+#define Y_EXTRUDER_OFFSET {0.00, 0.00 , 0.00}
+#define Z_EXTRUDER_OFFSET {0.00, 0.00 , 0.00}
+
+#else
 
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {40, 40, 40, 100}
 #define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 300}  // (mm/sec)
