@@ -955,7 +955,12 @@ ISR(TIMER0_COMPB_vect)
         ADMUX = ((1 << REFS0) | (TEMP_0_PIN & 0x07));
         ADCSRA |= 1<<ADSC; // Start conversion
       #endif
-      lcd_buttons_update();
+      #ifdef ULTIPANEL
+        buttons_check();
+      #endif
+      #ifdef LCD_4D
+        SERIAL1_CHECKDATA
+      #endif
       temp_state = 1;
       break;
     case 1: // Measure TEMP_0

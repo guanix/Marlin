@@ -859,9 +859,15 @@ void process_commands()
 
 #ifdef SDSUPPORT
     case 20: // M20 - list SD card
+      #ifdef LCD_4D
+        SERIAL1_PROTOCOLLNPGM(MSG_BEGIN_FILE_LIST);
+      #endif
       SERIAL_PROTOCOLLNPGM(MSG_BEGIN_FILE_LIST);
       card.ls();
       SERIAL_PROTOCOLLNPGM(MSG_END_FILE_LIST);
+      #ifdef LCD_4D
+      SERIAL1_PROTOCOLLNPGM(MSG_END_FILE_LIST);
+      #endif
       break;
     case 21: // M21 - init SD card
       

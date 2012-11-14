@@ -23,6 +23,8 @@ extern long position[4];
 extern CardReader card;
 #endif
 
+
+
 //===========================================================================
 //=============================public variables============================
 //===========================================================================
@@ -47,6 +49,24 @@ static unsigned long previous_millis_lcd=0;
 static uint8_t oldpercent=101;
 #endif
 
+static int olddegHotEnd0=0;
+static int oldtargetHotEnd0=-272;
+ 
+ 
+#if defined BED_USES_THERMISTOR || defined BED_USES_AD595 
+  static int oldtBed=-1;
+  static int oldtargetBed=-272; 
+#endif
+#if EXTRUDERS > 1
+ static int olddegHotEnd1=-1;
+ static int oldtargetHotEnd1=-1;
+#endif
+static uint16_t oldtime_m=0;
+static uint16_t oldtime_h=0;
+static int oldzpos=0;
+
+ 
+  
 //===========================================================================
 //=============================functions         ============================
 //===========================================================================
@@ -56,7 +76,7 @@ int intround(const float &x){return int(0.5+x);}
 
 void incomming()
 {
-  if(MYSERIAL1.available())
+  while(MYSERIAL1.available())
   {
     cmd_buff[buff_index] = (char)MYSERIAL1.read();
     if(cmd_buff[buff_index] == '\n')
@@ -110,31 +130,36 @@ void lcd4d_statuspgm(const char* message)
 
 void lcd4d_status()
 {
-  
     SERIAL1_CHECKDATA
+    
     if(((millis() - previous_millis_lcd) < LCD4D_UPDATE_INTERVAL) )
       return;
-    
-     previous_millis_lcd=millis();
+     
      lcd4d_update();
-  
+     previous_millis_lcd=millis();
 }
 
 void lcd4d_update() {
   lcd4d_showStatus();
 }
 
+void zeroFill(int value) 
+{
+  if(value < 100)
+     SERIAL1_PROTOCOLPGM("0");
+   if(value < 10)
+     SERIAL1_PROTOCOLPGM("0");
+}
+
 void lcd4d_showStatus()
 { 
-  static int olddegHotEnd0=0;
-  static int oldtargetHotEnd0=-272;
 
   //HotEnd0  
   int tHotEnd0=intround(degHotend0());
   if(tHotEnd0!=olddegHotEnd0 )
   {
- 
     SERIAL1_PROTOCOLPGM(HOTEND0_ID)
+    zeroFill(tHotEnd0);
     SERIAL1_PROTOCOLLN(tHotEnd0)
     olddegHotEnd0=tHotEnd0;
   }
@@ -143,17 +168,17 @@ void lcd4d_showStatus()
   if(ttHotEnd0!=oldtargetHotEnd0)
   {
     SERIAL1_PROTOCOLPGM(THOTEND0_ID)
+    zeroFill(ttHotEnd0);
     SERIAL1_PROTOCOLLN(ttHotEnd0)
     oldtargetHotEnd0=ttHotEnd0;
   }
   
   #if defined BED_USES_THERMISTOR || defined BED_USES_AD595 
-    static int oldtBed=-1;
-    static int oldtargetBed=-272; 
     int tBed=intround(degBed());
     if(tBed!=oldtBed )
     {
       SERIAL1_PROTOCOLPGM(TBED_ID)
+      zeroFill(tBed);
       SERIAL1_PROTOCOLLN(tBed)
       oldtBed=tBed;
     }
@@ -161,15 +186,14 @@ void lcd4d_showStatus()
     if(targetBed!=oldtargetBed)
     {
       SERIAL1_PROTOCOLPGM(TTBED_ID)
+      zeroFill(targetBed);
       SERIAL1_PROTOCOLLN(targetBed)
       oldtargetBed=targetBed;
     }
    #endif
      
   #if EXTRUDERS > 1
- 
-    static int olddegHotEnd1=-1;
-    static int oldtargetHotEnd1=-1;
+
     int tHotEnd1=intround(degHotend1());
     if(tHotEnd1!=olddegHotEnd1)
     {
@@ -186,30 +210,30 @@ void lcd4d_showStatus()
     }
   #endif
   
-  
-  //starttime=2;
-  static uint16_t oldtime=0;
   if(starttime!=0)
   {
     uint16_t time=millis()/60000-starttime/60000;
     
-    if(starttime!=oldtime)
+      uint16_t m=time%60;
+      uint16_t h=time/60;
+    
+    if( (time/60)!=oldtime_h || (time%60)!=oldtime_m )
     {
       SERIAL1_PROTOCOLPGM(TIME_ID)
-      SERIAL1_PROTOCOL(itostr2(time/60))
+      SERIAL1_PROTOCOL(itostr2(h))
       SERIAL1_PROTOCOLPGM("h");
-      SERIAL1_PROTOCOL(itostr2(time%60))
+      SERIAL1_PROTOCOL(itostr2(m))
       SERIAL1_PROTOCOLLNPGM("m");
-      oldtime=time;
+      oldtime_h=h;
+      oldtime_m=m;
     }
   }
   
-  static int oldzpos=0;
-  int currentz=current_position[2]*100;
+  int currentz=current_position[Z_AXIS]*100;
   if(currentz!=oldzpos)
   {
     SERIAL1_PROTOCOLPGM(ZPOS_ID)
-    SERIAL1_PROTOCOLLN(ftostr52(current_position[2]))
+    SERIAL1_PROTOCOLLN(ftostr52(current_position[Z_AXIS]))
     oldzpos=currentz;
   }
   
@@ -247,12 +271,14 @@ void lcd4d_showStatus()
     SERIAL1_PROTOCOLLN(messagetext);
     messagetext[0]='\0';
   }
-#ifdef SDSUPPORT
+  
   uint8_t percent=card.percentDone();
+#ifdef SDSUPPORT
   if(oldpercent!=percent)
   {
     SERIAL1_PROTOCOLPGM(SDPERCENT_ID)
     SERIAL1_PROTOCOLLN(itostr3((int)percent))
+    oldpercent=percent;
   }
 #endif
 

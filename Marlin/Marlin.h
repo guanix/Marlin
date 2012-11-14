@@ -103,11 +103,22 @@ const char echomagic[] PROGMEM ="echo:";
 #define SERIAL_ECHOLN(x) SERIAL_PROTOCOLLN(x)
 #define SERIAL_ECHOLNPGM(x) SERIAL_PROTOCOLLNPGM(x)
 
-#define SERIAL_ECHOPAIR(name,value) (serial_echopair_P(PSTR(name),(value)))
 
-void serial_echopair_P(const char *s_P, float v);
-void serial_echopair_P(const char *s_P, double v);
-void serial_echopair_P(const char *s_P, unsigned long v);
+#ifdef MYSERIAL1
+#define SERIAL1_ERROR_START serial1printPGM(errormagic);
+#define SERIAL1_ERROR(x) SERIAL1_PROTOCOL(x)
+#define SERIAL1_ERRORPGM(x) SERIAL1_PROTOCOLPGM(x)
+#define SERIAL1_ERRORLN(x) SERIAL1_PROTOCOLLN(x)
+#define SERIAL1_ERRORLNPGM(x) SERIAL1_PROTOCOLLNPGM(x)
+
+#define SERIAL1_ECHO_START serial1printPGM(echomagic);
+#define SERIAL1_ECHO(x) SERIAL1_PROTOCOL(x)
+#define SERIAL1_ECHOPGM(x) SERIAL1_PROTOCOLPGM(x)
+#define SERIAL1_ECHOLN(x) SERIAL1_PROTOCOLLN(x)
+#define SERIAL1_ECHOLNPGM(x) SERIAL1_PROTOCOLLNPGM(x)
+#endif
+
+#define SERIAL_ECHOPAIR(name,value) {SERIAL_ECHOPGM(name);SERIAL_ECHO(value);}
 
 
 //things to write to serial from Programmemory. saves 400 to 2k of RAM.
