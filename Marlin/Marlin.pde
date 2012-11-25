@@ -110,6 +110,7 @@
 // M114 - Output current position to serial port 
 // M115	- Capabilities string
 // M117 - display message
+// M118 - LCD 4D Finish Sound
 // M119 - Output Endstop status to serial port
 // M140 - Set bed target temp
 // M190 - Wait for bed current temp to reach target temp.
@@ -937,8 +938,248 @@ void process_commands()
 /* All the implementation is done in *.cpp files to get better compatibility with avr-gcc without the Arduino IDE */
 /* Use this file to help the Arduino IDE find which Arduino libraries are needed and to keep documentation on GCode */
 
-#include "Configuration.h"
-#include "pins.h"
+      if (code_seen('S'))
+      {
+        extruder_temperature[tmp_extruder] = code_value();
+        setTargetHotend(code_value(), tmp_extruder);
+      }
+      
+      
+      codenum = millis(); 
+      wait_for_temp(tmp_extruder, codenum);
+      break;
+    case 190: // M190 - Wait for bed heater to reach target.
+    #if TEMP_BED_PIN > -1
+        LCD_MESSAGEPGM(MSG_BED_HEATING);
+        if (code_seen('S')) setTargetBed(code_value());
+        codenum = millis(); 
+        while(isHeatingBed()) 
+        {
+          if(( millis() - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up.
+          {
+            float tt=degHotend(active_extruder);
+            SERIAL_PROTOCOLPGM("T:");
+            SERIAL_PROTOCOL(tt);
+            SERIAL_PROTOCOLPGM(" E:");
+            SERIAL_PROTOCOL((int)active_extruder); 
+            SERIAL_PROTOCOLPGM(" B:");
+            SERIAL_PROTOCOL_F(degBed(),1); 
+            SERIAL_PROTOCOLLN(""); 
+            codenum = millis(); 
+          }
+          manage_heater();
+          manage_inactivity(1);
+          LCD_STATUS;
+        }
+        LCD_MESSAGEPGM(MSG_BED_DONE);
+        previous_millis_cmd = millis();
+    #endif
+        break;
+
+    #if FAN_PIN > -1
+      case 106: //M106 Fan On
+        if (code_seen('S')){
+           FanSpeed=constrain(code_value(),0,255);
+        }
+        else {
+          FanSpeed=255;			
+        }
+        break;
+      case 107: //M107 Fan Off
+        FanSpeed = 0;
+        break;
+    #endif //FAN_PIN
+
+        
+    case 82:
+      axis_relative_modes[3] = false;
+      break;
+    case 83:
+      axis_relative_modes[3] = true;
+      break;
+    case 18: //compatibility
+    case 84: // M84
+      if(code_seen('S')){ 
+        stepper_inactive_time = code_value() * 1000; 
+      }
+      else
+      { 
+        bool all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2]))|| (code_seen(axis_codes[3])));
+        if(all_axis)
+        {
+          st_synchronize();
+          disable_e0();
+          disable_e1();
+          disable_e2();
+          finishAndDisableSteppers();
+        }
+        else
+        {
+          st_synchronize();
+          if(code_seen('X')) disable_x();
+          if(code_seen('Y')) disable_y();
+          if(code_seen('Z')) disable_z();
+          #if ((E0_ENABLE_PIN != X_ENABLE_PIN) && (E1_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
+            if(code_seen('E')) {
+              disable_e0();
+              disable_e1();
+              disable_e2();
+            }
+          #endif 
+          LCD_MESSAGEPGM(MSG_PART_RELEASE);
+        }
+      }
+      break;
+    case 85: // M85
+      code_seen('S');
+      max_inactive_time = code_value() * 1000; 
+      break;
+    case 92: // M92
+      for(int8_t i=0; i < NUM_AXIS; i++) 
+      {
+        if(code_seen(axis_codes[i])) 
+          axis_steps_per_unit[i] = code_value();
+      }
+      break;
+    case 115: // M115
+      SerialprintPGM(MSG_M115_REPORT);
+      break;
+    case 117: // M117 display message
+      LCD_MESSAGE(cmdbuffer[bufindr]+5);
+      break;
+    #ifdef LCD_4D
+    case 118: //M118 finish sound
+      LCD_FINISH_SOUND
+      break;
+    #endif
+    
+    case 114: // M114
+      SERIAL_PROTOCOLPGM("X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      break;
+    case 120: // M120
+      enable_endstops(false) ;
+      break;
+    case 121: // M121
+      enable_endstops(true) ;
+      break;
+    case 119: // M119
+      #if (X_MIN_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_X_MIN);
+        SERIAL_PROTOCOL(((READ(X_MIN_PIN)^X_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      #if (X_MAX_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_X_MAX);
+        SERIAL_PROTOCOL(((READ(X_MAX_PIN)^X_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      #if (Y_MIN_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_Y_MIN);
+        SERIAL_PROTOCOL(((READ(Y_MIN_PIN)^Y_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      #if (Y_MAX_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_Y_MAX);
+        SERIAL_PROTOCOL(((READ(Y_MAX_PIN)^Y_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      #if (Z_MIN_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_Z_MIN);
+        SERIAL_PROTOCOL(((READ(Z_MIN_PIN)^Z_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      #if (Z_MAX_PIN > -1)
+        SERIAL_PROTOCOLPGM(MSG_Z_MAX);
+        SERIAL_PROTOCOL(((READ(Z_MAX_PIN)^Z_ENDSTOPS_INVERTING)?"H ":"L "));
+      #endif
+      SERIAL_PROTOCOLLN("");
+      break;
+    case 201: // M201
+      for(int8_t i=0; i < NUM_AXIS; i++) 
+      {
+        if(code_seen(axis_codes[i]))
+        {
+          max_acceleration_units_per_sq_second[i] = code_value();
+          axis_steps_per_sqr_second[i] = code_value() * axis_steps_per_unit[i];
+        }
+      }
+      break;
+    #if 0 // Not used for Sprinter/grbl gen6
+    case 202: // M202
+      for(int8_t i=0; i < NUM_AXIS; i++) {
+        if(code_seen(axis_codes[i])) axis_travel_steps_per_sqr_second[i] = code_value() * axis_steps_per_unit[i];
+      }
+      break;
+    #endif
+    case 203: // M203 max feedrate mm/sec
+      for(int8_t i=0; i < NUM_AXIS; i++) {
+        if(code_seen(axis_codes[i])) max_feedrate[i] = code_value();
+      }
+      break;
+    case 204: // M204 acclereration S normal moves T filmanent only moves
+      {
+        if(code_seen('S')) acceleration = code_value() ;
+        if(code_seen('T')) retract_acceleration = code_value() ;
+      }
+      break;
+    case 205: //M205 advanced settings:  minimum travel speed S=while printing T=travel only,  B=minimum segment time X= maximum xy jerk, Z=maximum Z jerk
+    {
+      if(code_seen('S')) minimumfeedrate = code_value();
+      if(code_seen('T')) mintravelfeedrate = code_value();
+      if(code_seen('B')) minsegmenttime = code_value() ;
+      if(code_seen('X')) max_xy_jerk = code_value() ;
+      if(code_seen('Z')) max_z_jerk = code_value() ;
+      if(code_seen('E')) max_e_jerk = code_value() ;
+      #ifdef ADVANCE
+      if(code_seen('K')) advance_k = code_value() ;
+      #endif
+    }
+    break;
+    case 206: // M206 additional homeing offset
+      for(int8_t i=0; i < 3; i++) 
+      {
+        if(code_seen(axis_codes[i])) add_homeing[i] = code_value();
+      }
+      break;
+    case 208: // M208 set axis max length
+      for(int8_t i=0; i < 3; i++) 
+      {
+        if(code_seen(axis_codes[i])) {
+          max_length[i] = code_value();
+          SERIAL_PROTOCOL(axis_codes[i]);
+          SERIAL_PROTOCOL(" Axis max length: ");
+          SERIAL_PROTOCOL(max_length[i]);
+        }
+      }
+      break;
+    case 220: // M220 S<factor in percent>- set speed factor override percentage
+    {
+      if(code_seen('S')) 
+      {
+        feedmultiply = code_value() ;
+        feedmultiplychanged=true;
+      }
+    }
+    break;
+    case 221: // M221 S<factor in percent>- set extrude factor override percentage
+    {
+      if(code_seen('S')) 
+      {
+        extrudemultiply = code_value() ;
+      }
+    }
+    break;
 
 #ifdef ULTRA_LCD
 #include <LiquidCrystal.h>

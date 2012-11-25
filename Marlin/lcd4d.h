@@ -16,6 +16,7 @@
 #define TIME_ID "t:"
 #define ZPOS_ID "Z:"
 #define SDPERCENT_ID "S:"
+#define SOUND_ID "s:"
 
 #define SERIAL1_CHECKDATA incomming();
 
@@ -26,6 +27,7 @@ void lcd4d_status(const char* message);
 void lcd4d_status();
 void lcd4d_statuspgm(const char* message);
 void lcd4d_showStatus();
+void lcd4d_finishSound();
 void incomming();
 
 

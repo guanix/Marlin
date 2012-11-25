@@ -39,7 +39,7 @@ static char messagetext[LCD4D_WIDTH]="";
 //return for string conversion routines
 static char conv[8];
 
-#define BUFFLEN 15
+#define BUFFLEN 30
 static char cmd_buff[BUFFLEN];
 static int  buff_index=0;
 
@@ -50,12 +50,12 @@ static uint8_t oldpercent=101;
 #endif
 
 static int olddegHotEnd0=0;
-static int oldtargetHotEnd0=-272;
+static int oldtargetHotEnd0=0;
  
  
 #if defined BED_USES_THERMISTOR || defined BED_USES_AD595 
   static int oldtBed=-1;
-  static int oldtargetBed=-272; 
+  static int oldtargetBed=0; 
 #endif
 #if EXTRUDERS > 1
  static int olddegHotEnd1=-1;
@@ -76,7 +76,7 @@ int intround(const float &x){return int(0.5+x);}
 
 void incomming()
 {
-  while(MYSERIAL1.available())
+  while(MYSERIAL1.available()>0)
   {
     cmd_buff[buff_index] = (char)MYSERIAL1.read();
     if(cmd_buff[buff_index] == '\n')
@@ -102,10 +102,9 @@ void lcd4d_init()
 
 }
 
-void lcd4d_debug()
-{
-
-}
+//void lcd4d_debug()
+//{
+//}
 
 void lcd4d_status(const char* message)
 {
@@ -168,9 +167,17 @@ void lcd4d_showStatus()
   if(ttHotEnd0!=oldtargetHotEnd0)
   {
     SERIAL1_PROTOCOLPGM(THOTEND0_ID)
+    if(ttHotEnd0==-272) // First time, force update
+    {
+       SERIAL1_PROTOCOLLN("000")
+       oldtargetHotEnd0=0;     
+    }
+    else
+    {
     zeroFill(ttHotEnd0);
     SERIAL1_PROTOCOLLN(ttHotEnd0)
     oldtargetHotEnd0=ttHotEnd0;
+    }
   }
   
   #if defined BED_USES_THERMISTOR || defined BED_USES_AD595 
@@ -186,9 +193,17 @@ void lcd4d_showStatus()
     if(targetBed!=oldtargetBed)
     {
       SERIAL1_PROTOCOLPGM(TTBED_ID)
-      zeroFill(targetBed);
-      SERIAL1_PROTOCOLLN(targetBed)
-      oldtargetBed=targetBed;
+      if(targetBed==-272) // First time, force update
+      {
+       SERIAL1_PROTOCOLLN("000")
+       oldtargetBed=0; 
+      }
+      else
+      {
+        zeroFill(targetBed);
+        SERIAL1_PROTOCOLLN(targetBed)
+        oldtargetBed=targetBed;
+      }
     }
    #endif
      
@@ -205,8 +220,16 @@ void lcd4d_showStatus()
     if(ttHotEnd1!=oldtargetHotEnd1)
     {
       SERIAL1_PROTOCOLPGM(THOTEND1_ID)
-      SERIAL1_PROTOCOLLN(ttHotEnd1)
-      oldtargetHotEnd1=ttHotEnd1;
+      if(ttHotEnnd1==-272) {  // First time, force update
+        SERIAL1_PROTOCOLLN("000")
+        oldtargetHotEnd1=0;        
+      }
+      else
+      {
+        zeroFill(targetBed);
+        SERIAL1_PROTOCOLLN(ttHotEnd1)
+        oldtargetHotEnd1=ttHotEnd1;
+      }
     }
   #endif
   
@@ -285,6 +308,9 @@ void lcd4d_showStatus()
   //force_lcd_update=false;
 }
   
+void lcd4d_finishSound() {
+    SERIAL1_PROTOCOLLNPGM(SOUND_ID);
+}
   
   
   //  convert float to string with +123.4 format

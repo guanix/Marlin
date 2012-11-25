@@ -87,6 +87,7 @@ char *ftostr51(const float &x);
 #define LCD_STATUS lcd4d_status();
 #define LCD_MESSAGE(x) lcd4d_status(x);
 #define LCD_MESSAGEPGM(x) lcd4d_statuspgm(MYPGM(x));
+#define LCD_FINISH_SOUND lcd4d_finishSound();
 
 #define CLICKED false
 #define BLOCK ;
