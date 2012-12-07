@@ -16,9 +16,11 @@
 #define TIME_ID "t:"
 #define ZPOS_ID "Z:"
 #define SDPERCENT_ID "S:"
+#define FEEDMULTIPLY_ID "F:"
 #define SOUND_ID "s:"
 
-#define SERIAL1_CHECKDATA incomming();
+#define SERIAL1_CHECKDATA lcd4d_incoming();
+#define LCD_FORCE_UPDATE lcd4d_force_update();
 
 void lcd4d_init();
 void lcd4d_update();
@@ -28,7 +30,8 @@ void lcd4d_status();
 void lcd4d_statuspgm(const char* message);
 void lcd4d_showStatus();
 void lcd4d_finishSound();
-void incomming();
+void lcd4d_incoming();
+void lcd4d_force_update();
 
 
 char *ftostr3(const float &x);

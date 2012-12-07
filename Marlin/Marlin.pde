@@ -109,6 +109,7 @@
 // M92  - Set axis_steps_per_unit - same syntax as G92
 // M114 - Output current position to serial port 
 // M115	- Capabilities string
+// M116 - Force LCD 4D Update
 // M117 - display message
 // M118 - LCD 4D Finish Sound
 // M119 - Output Endstop status to serial port
@@ -1044,6 +1045,11 @@ void process_commands()
     case 115: // M115
       SerialprintPGM(MSG_M115_REPORT);
       break;
+    #ifdef LCD_4D
+    case 116: // M116 LCD 4D force updte
+      LCD_FORCE_UPDATE
+      break;    
+    #endif
     case 117: // M117 display message
       LCD_MESSAGE(cmdbuffer[bufindr]+5);
       break;
