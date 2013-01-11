@@ -5,7 +5,6 @@
 #define LCD4D_WIDTH 57
 #define LCD4D_UPDATE_INTERVAL 100
 
-
 #define MESSAGE_ID "M:"
 #define HOTEND0_ID "H0:"
 #define HOTEND1_ID "H1:"
@@ -19,7 +18,7 @@
 #define FEEDMULTIPLY_ID "F:"
 #define SOUND_ID "s:"
 
-#define SERIAL1_CHECKDATA lcd4d_incoming();
+#define LCD4D_CHECKDATA lcd4d_incoming();
 #define LCD_FORCE_UPDATE lcd4d_force_update();
 
 void lcd4d_init();

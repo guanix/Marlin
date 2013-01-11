@@ -132,10 +132,9 @@ void lcd4d_statuspgm(const char* message)
 
 void lcd4d_status()
 {
-    SERIAL1_CHECKDATA
-    
-    if(((millis() - previous_millis_lcd) < LCD4D_UPDATE_INTERVAL) || !force_lcd_update )
-      return;
+    if(!force_lcd_update)
+      if((millis() - previous_millis_lcd) < LCD4D_UPDATE_INTERVAL)
+        return;
      
      lcd4d_update();
      previous_millis_lcd=millis();

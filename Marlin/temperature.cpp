@@ -959,7 +959,7 @@ ISR(TIMER0_COMPB_vect)
         buttons_check();
       #endif
       #ifdef LCD_4D
-        SERIAL1_CHECKDATA
+        LCD4D_CHECKDATA
       #endif
       temp_state = 1;
       break;
